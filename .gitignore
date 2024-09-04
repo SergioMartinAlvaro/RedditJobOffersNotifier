@@ -1,0 +1,13 @@
+# Exclude local settings file
+local.settings.json
+
+# Exclude node_modules in AzureFunctions/functions
+AzureFunctions/RedditApiFunction/node_modules
+
+# Other common exclusions
+node_modules
+.DS_Store
+.env
+.vscode
+dist
+build
