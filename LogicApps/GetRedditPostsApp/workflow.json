@@ -1,0 +1,162 @@
+{
+    "definition": {
+      "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+      "contentVersion": "1.0.0.0",
+      "triggers": {
+        "Recurrence": {
+          "type": "Recurrence",
+          "recurrence": {
+            "frequency": "Day",
+            "interval": 1,
+            "schedule": {
+              "hours": [
+                "12"
+              ],
+              "minutes": [
+                30
+              ]
+            },
+            "timeZone": "Romance Standard Time"
+          }
+        }
+      },
+      "actions": {
+        "Bucle_busca_ofertas": {
+          "type": "Foreach",
+          "foreach": "@variables('Subreddits')",
+          "actions": {
+            "Llamada_a_Function_Reddit": {
+              "type": "Function",
+              "inputs": {
+                "body": {
+                  "subreddit": "@items('Bucle_busca_ofertas')",
+                  "searchKeywords": "@variables('Keywords')"
+                },
+                "function": {
+                  "id": "/subscriptions/b6113f08-345a-4bfd-ba81-5797978968ea/resourceGroups/functionRedditNews/providers/Microsoft.Web/sites/RedditNewsTrigger/functions/RedditNewsTrigger"
+                }
+              }
+            },
+            "Append_to_array_variable": {
+              "type": "AppendToArrayVariable",
+              "inputs": {
+                "name": "Ofertas",
+                "value": "@outputs('Llamada_a_Function_Reddit')"
+              },
+              "runAfter": {
+                "Llamada_a_Function_Reddit": [
+                  "Succeeded"
+                ]
+              }
+            }
+          },
+          "runAfter": {
+            "Inicializar_SearchKeywords": [
+              "Succeeded"
+            ]
+          }
+        },
+        "Inicializar_SearchKeywords": {
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "Keywords",
+                "type": "array",
+                "value": [
+                  "FrontEnd",
+                  "Front End",
+                  "Serverless",
+                  "Azure",
+                  "JS",
+                  "Front",
+                  "SCSS",
+                  "Javascript",
+                  "React",
+                  "Cloud",
+                  "Flutter",
+                  "Typescript",
+                  "Angular"
+                ]
+              }
+            ]
+          },
+          "runAfter": {
+            "Inicializar_Subreddits": [
+              "Succeeded"
+            ]
+          }
+        },
+        "Inicializar_Subreddits": {
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "Subreddits",
+                "type": "array",
+                "value": [
+                  "remotejs",
+                  "techjobs",
+                  "programmingjobs",
+                  "webdevjobs",
+                  "forhire",
+                  "jobbit",
+                  "techjobs",
+                  "remotework"
+                ]
+              }
+            ]
+          },
+          "runAfter": {
+            "Inicializar_Array_Ofertas": [
+              "Succeeded"
+            ]
+          }
+        },
+        "Llamada_": {
+          "type": "Http",
+          "inputs": {
+            "uri": "https://prod-103.westeurope.logic.azure.com:443/workflows/1c3273d273744dafb1b239a5b808ac32/triggers/manual/paths/invoke?api-version=2016-10-01&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=0df0Ve2IRitvEkMSbK6M7Ex9yxUMyiUnlnrP5rmIl1s",
+            "method": "POST",
+            "headers": {
+              "Content-Type": "application/json"
+            },
+            "body": {
+              "message": "Hola",
+              "offers": "@variables('Ofertas')"
+            }
+          },
+          "runAfter": {
+            "Bucle_busca_ofertas": [
+              "Succeeded"
+            ]
+          }
+        },
+        "Inicializar_Array_Ofertas": {
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "Ofertas",
+                "type": "array",
+                "value": []
+              }
+            ]
+          },
+          "runAfter": {}
+        }
+      },
+      "outputs": {},
+      "parameters": {
+        "$connections": {
+          "type": "Object",
+          "defaultValue": {}
+        }
+      }
+    },
+    "parameters": {
+      "$connections": {
+        "value": {}
+      }
+    }
+  }

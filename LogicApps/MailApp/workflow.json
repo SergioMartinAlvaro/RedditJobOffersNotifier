@@ -1,0 +1,180 @@
+{
+    "definition": {
+      "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+      "contentVersion": "1.0.0.0",
+      "triggers": {
+        "manual": {
+          "type": "Request",
+          "kind": "Http"
+        }
+      },
+      "actions": {
+        "Inicializar_Mensaje": {
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              null
+            ]
+          },
+          "runAfter": {
+            "Inicializar_variable_-_\"error\"": [
+              "Succeeded"
+            ]
+          }
+        },
+        "Scope_-_Implementacion": {
+          "type": "Scope",
+          "actions": {
+            "Las_ofertas_son_0": {
+              "type": "If",
+              "actions": {
+                "Mensaje_no_hay_ofertas": {
+                  "type": "SetVariable"
+                }
+              },
+              "else": {
+                "actions": {
+                  "Recorrer_ofertas_subreddit": {
+                    "type": "Foreach",
+                    "actions": {
+                      "Existen_ofertas_en_Subreddit": {
+                        "type": "If",
+                        "actions": {
+                          "Recorrer_posts": {
+                            "type": "Foreach",
+                            "actions": {
+                              "Append_to_string_variable": {
+                                "type": "AppendToStringVariable"
+                              }
+                            },
+                            "runAfter": {
+                              "Parsear_Ofertas_Body_JSON": [
+                                "Succeeded"
+                              ]
+                            }
+                          },
+                          "Parsear_Ofertas_Body_JSON": {
+                            "type": "ParseJson"
+                          }
+                        },
+                        "else": {
+                          "actions": {
+                            "Set_variable_-_\"error\"-copy": {
+                              "type": "SetVariable"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "Enviar_correo_electrónico_(V2)": {
+              "type": "ApiConnection",
+              "inputs": {
+                "host": {
+                  "connection": {
+                    "name": "@parameters('$connections')['gmail']['connectionId']"
+                  }
+                },
+                "method": "post",
+                "path": "/v2/Mail"
+              },
+              "runAfter": {
+                "Las_ofertas_son_0": [
+                  "Succeeded"
+                ]
+              }
+            },
+            "Response_-_Success": {
+              "type": "Response",
+              "kind": "Http",
+              "runAfter": {
+                "Enviar_correo_electrónico_(V2)": [
+                  "Succeeded"
+                ]
+              }
+            }
+          },
+          "runAfter": {
+            "Inicializar_Mensaje": [
+              "Succeeded"
+            ]
+          }
+        },
+        "Scope_-_Error_Handler": {
+          "type": "Scope",
+          "actions": {
+            "Condition_-_Evaluate_error-copy": {
+              "type": "If",
+              "actions": {
+                "Response_-_Error": {
+                  "type": "Response",
+                  "kind": "Http"
+                },
+                "Terminate_-_Error_handler": {
+                  "type": "Terminate",
+                  "runAfter": {
+                    "Response_-_Error": [
+                      "Succeeded"
+                    ]
+                  }
+                }
+              },
+              "else": {
+                "actions": {
+                  "Response_-_Not_found": {
+                    "type": "Response",
+                    "kind": "Http"
+                  },
+                  "Terminate_-_Error_handler_NF-copy": {
+                    "type": "Terminate",
+                    "runAfter": {
+                      "Response_-_Not_found": [
+                        "Succeeded"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "runAfter": {
+            "Scope_-_Implementacion": [
+              "TimedOut",
+              "Skipped",
+              "Failed"
+            ]
+          }
+        },
+        "Inicializar_variable_-_\"error\"": {
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              null
+            ]
+          },
+          "runAfter": {}
+        }
+      },
+      "outputs": {},
+      "parameters": {
+        "$connections": {
+          "type": "Object",
+          "defaultValue": {}
+        }
+      }
+    },
+    "parameters": {
+      "$connections": {
+        "value": {
+          "gmail": {
+            "id": "@appsettings('GmailApiConnection')",
+            "connectionId": "@appsettings('GmailConnectionId')",
+            "connectionName": "gmail"
+          }
+        }
+      }
+    }
+  }
